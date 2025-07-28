@@ -123,128 +123,125 @@
     });
 
     form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      submitBtn.classList.add("is-loading");
-      submitBtn.disabled = true;
-      hideMessage(); // Hide any existing messages
+        e.preventDefault();
+        submitBtn.classList.add("is-loading");
+        submitBtn.disabled = true;
+        hideMessage();
 
-      try {
-        const studentBlocks = document.querySelectorAll(".student-block");
-        if (studentBlocks.length === 0) {
-          showMessage("Please add at least one student.", "error");
-          return;
+        const successfulBookings = []; // To store details for calendar links
+
+        try {
+            const studentBlocks = document.querySelectorAll(".student-block");
+            if (studentBlocks.length === 0) {
+                showMessage("Please add at least one student.", "error");
+                return;
+            }
+
+            let allSubmissionsSuccessful = true;
+
+            for (const studentBlock of studentBlocks) {
+                const studentNameInput = studentBlock.querySelector("input[name='student_name']");
+                const studentName = studentNameInput.value.trim();
+                if (!studentName) {
+                    showMessage("Please enter a valid student name for all students.", "error");
+                    studentNameInput.focus();
+                    allSubmissionsSuccessful = false;
+                    break;
+                }
+
+                const dateEntries = studentBlock.querySelectorAll(".date-entry");
+                if (dateEntries.length === 0) {
+                    showMessage(`Please add at least one replacement date for ${studentName}.`, "warning");
+                    allSubmissionsSuccessful = false;
+                    continue;
+                }
+
+                for (const entry of dateEntries) {
+                    const dateInput = entry.querySelector("input[name='date_of_replacement']");
+                    const slotSelect = entry.querySelector("select[name='time_slot']");
+                    const dateValue = dateInput.value;
+                    const timeSlot = slotSelect.value || "";
+
+                    if (!dateValue) {
+                        showMessage(`Please enter a date for ${studentName}.`, "error");
+                        dateInput.focus();
+                        allSubmissionsSuccessful = false;
+                        break;
+                    }
+
+                    const dateObj = new Date(dateValue + "T00:00:00");
+                    const day = dateObj.getDay();
+                    const formattedDate = dateObj.toISOString().split('T')[0];
+
+                    if (HOLIDAYS.includes(formattedDate)) {
+                        showMessage(`${dateValue} is a holiday. Please choose another date for ${studentName}.`, "error");
+                        dateInput.focus();
+                        allSubmissionsSuccessful = false;
+                        break;
+                    }
+
+                    if (![1, 3, 6].includes(day)) {
+                        showMessage(`${dateValue} is not a Monday, Wednesday, or Saturday. Please correct for ${studentName}.`, "error");
+                        dateInput.focus();
+                        allSubmissionsSuccessful = false;
+                        break;
+                    }
+
+                    if (day === 6 && !timeSlot) {
+                        showMessage(`Please select a time slot for Saturday ${dateValue} for ${studentName}.`, "error");
+                        slotSelect.focus();
+                        allSubmissionsSuccessful = false;
+                        break;
+                    }
+
+                    const availabilityInfoEl = entry.querySelector(".availability-info");
+                    const currentMaxCapacity = parseInt(availabilityInfoEl.dataset.maxCapacity || "0");
+                    const currentBooked = parseInt(availabilityInfoEl.dataset.booked || "0");
+
+                    if (currentMaxCapacity > 0 && currentBooked >= currentMaxCapacity) {
+                        showMessage(`The slot for ${studentName} on ${dateValue} ${timeSlot ? '('+timeSlot+')' : ''} appears full. Submission might fail.`, "warning");
+                    }
+
+                    const formData = new FormData();
+                    formData.append("student_name", studentName);
+                    formData.append("date_of_replacement", dateValue);
+                    formData.append("time_slot", timeSlot);
+                    formData.append("action", "submitEntry");
+
+                    const submitResponse = await fetch(scriptUrl, { method: "POST", body: formData });
+                    const resultText = await submitResponse.text();
+
+                    if (!submitResponse.ok || resultText.toLowerCase().startsWith("error:")) {
+                        allSubmissionsSuccessful = false;
+                        showMessage(`Error for ${studentName} on ${dateValue}: ${resultText}`, "error");
+                        break;
+                    }
+                    // ADDITION: Store successful booking details
+                    successfulBookings.push({ studentName, date: dateValue, timeSlot });
+                }
+                if (!allSubmissionsSuccessful) break;
+            }
+
+            // MODIFICATION: Check successfulBookings array to build the success message
+            if (allSubmissionsSuccessful && successfulBookings.length > 0) {
+                let successMessageHtml = `<b>Successfully submitted ${successfulBookings.length} replacement request(s)!</b>`;
+                successfulBookings.forEach(booking => {
+                    successMessageHtml += generateCalendarLink(booking);
+                });
+                showMessage(successMessageHtml, "success");
+                form.reset();
+                handleReset();
+            } else if (successfulBookings.length === 0 && allSubmissionsSuccessful) {
+                showMessage("No replacement requests were submitted. Please check your entries.", "warning");
+            }
+
+        } catch (error) {
+            console.error("Form submission error:", error);
+            showMessage(`An unexpected error occurred: ${error.message}`, "error");
+        } finally {
+            submitBtn.classList.remove("is-loading");
+            submitBtn.disabled = false;
         }
-
-        let allSubmissionsSuccessful = true;
-        let successfulEntries = 0;
-
-        for (const studentBlock of studentBlocks) {
-          const studentNameInput = studentBlock.querySelector("input[name='student_name']");
-          const studentName = studentNameInput.value.trim();
-          if (!studentName) {
-            showMessage("Please enter a valid student name for all students.", "error");
-            studentNameInput.focus();
-            allSubmissionsSuccessful = false;
-            break; 
-          }
-
-          const dateEntries = studentBlock.querySelectorAll(".date-entry");
-          if (dateEntries.length === 0) {
-             showMessage(`Please add at least one replacement date for ${studentName}.`, "warning");
-             allSubmissionsSuccessful = false; // Or treat as warning and continue? For now, consider it a setup issue.
-             continue; // Skip this student if they have no date entries
-          }
-
-
-          for (const entry of dateEntries) {
-            const dateInput = entry.querySelector("input[name='date_of_replacement']");
-            const slotSelect = entry.querySelector("select[name='time_slot']");
-            const dateValue = dateInput.value;
-            const timeSlot = slotSelect.value || "";
-
-            if (!dateValue) {
-              showMessage(`Please enter a date for ${studentName}.`, "error");
-              dateInput.focus();
-              allSubmissionsSuccessful = false;
-              break; 
-            }
-
-            const dateObj = new Date(dateValue + "T00:00:00"); // Ensure local timezone interpretation
-            const day = dateObj.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
-            const formattedDate = dateObj.toISOString().split('T')[0];
-
-            if (HOLIDAYS.includes(formattedDate)) {
-              showMessage(`${dateValue} is a holiday. Please choose another date for ${studentName}.`, "error");
-              dateInput.focus();
-              allSubmissionsSuccessful = false;
-              break;
-            }
-
-            if (![1, 3, 6].includes(day)) { // Monday, Wednesday, Saturday
-              showMessage(`${dateValue} is not a Monday, Wednesday, or Saturday. Please correct for ${studentName}.`, "error");
-              dateInput.focus();
-              allSubmissionsSuccessful = false;
-              break;
-            }
-
-            if (day === 6 && !timeSlot) { // Saturday
-              showMessage(`Please select a time slot for Saturday ${dateValue} for ${studentName}.`, "error");
-              slotSelect.focus();
-              allSubmissionsSuccessful = false;
-              break;
-            }
-            
-            // Client-side pre-check for capacity (server is the ultimate authority)
-            const availabilityInfoEl = entry.querySelector(".availability-info");
-            const currentMaxCapacity = parseInt(availabilityInfoEl.dataset.maxCapacity || "0");
-            const currentBooked = parseInt(availabilityInfoEl.dataset.booked || "0");
-
-            if (currentMaxCapacity > 0 && currentBooked >= currentMaxCapacity) {
-                 showMessage(`The slot for ${studentName} on ${dateValue} ${timeSlot ? '('+timeSlot+')' : ''} appears full based on recent check. Submission might fail if still full.`, "warning");
-                 // We still attempt submission as server has the final say with LockService
-            }
-
-
-            const formData = new FormData();
-            formData.append("student_name", studentName);
-            formData.append("date_of_replacement", dateValue);
-            formData.append("time_slot", timeSlot);
-            formData.append("action", "submitEntry"); // Add action for doPost routing
-
-            const submitResponse = await fetch(scriptUrl, { method: "POST", body: formData });
-            const resultText = await submitResponse.text();
-            
-            if (!submitResponse.ok || resultText.toLowerCase().startsWith("error:")) {
-              allSubmissionsSuccessful = false;
-              showMessage(`Error for ${studentName} on ${dateValue}: ${resultText}`, "error");
-              break; // Stop processing further entries for this student on error
-            }
-            successfulEntries++;
-          } // End loop for date entries for one student
-          if (!allSubmissionsSuccessful) break; // Stop processing other students if an error occurred
-        } // End loop for student blocks
-
-        if (allSubmissionsSuccessful && successfulEntries > 0) {
-          showMessage(`Successfully submitted ${successfulEntries} replacement request(s)!`, "success");
-          form.reset();
-          handleReset(); // Clear dynamic content
-        } else if (successfulEntries === 0 && allSubmissionsSuccessful) {
-          // This case might happen if no student blocks or no date entries were actually processed
-          // but no hard errors were thrown (e.g. only warnings, or empty form submitted)
-          showMessage("No replacement requests were submitted. Please check your entries.", "warning");
-        } else if (!allSubmissionsSuccessful) {
-            // Error message would have already been shown.
-            // Optionally, add a generic "Some submissions failed" message here if needed.
-        }
-
-      } catch (error) {
-        console.error("Form submission error:", error);
-        showMessage(`An unexpected error occurred: ${error.message}`, "error");
-        allSubmissionsSuccessful = false; // Ensure this is set
-      } finally {
-        submitBtn.classList.remove("is-loading");
-        submitBtn.disabled = false;
-      }
     });
 
     function addStudent() {
@@ -328,26 +325,21 @@
 
     function removeStudent(button) {
       button.closest(".student-block").remove();
-      if (studentsContainer.children.length === 0) { // If all students removed, add one back
-          addStudent();
+      if (studentsContainer.children.length === 0) {
+        addStudent();
       }
     }
 
     function removeDateEntry(button) {
       const dateEntryElement = button.closest(".date-entry");
-      const parentContainer = dateEntryElement.parentElement;
       dateEntryElement.remove();
-      // Optional: if it was the last date entry for a student, could prompt or add one back, but for now, just remove.
-      // if (parentContainer.children.length === 0) {
-      //   // Potentially add a new default date entry back or message user
-      // }
     }
     
     function validateDayRealtime(input) {
         const date = input.value;
         const availabilityInfoEl = input.closest(".date-entry").querySelector(".availability-info");
-        availabilityInfoEl.textContent = ''; // Clear previous availability
-        availabilityInfoEl.className = 'availability-info help'; // Reset class
+        availabilityInfoEl.textContent = '';
+        availabilityInfoEl.className = 'availability-info help';
 
         if (!date) return;
         const dateObj = new Date(date + "T00:00:00");
@@ -362,9 +354,8 @@
             input.reportValidity();
             return;
         }
-        input.setCustomValidity(""); // Clear validation message
+        input.setCustomValidity("");
     }
-
 
     function handleDateChange(input) {
       const dateEntryElement = input.closest(".date-entry");
@@ -372,43 +363,40 @@
       const timeSlotSelect = dateEntryElement.querySelector("select[name='time_slot']");
       const availabilityInfoEl = dateEntryElement.querySelector(".availability-info");
       
-      availabilityInfoEl.textContent = ''; // Clear previous availability
-      availabilityInfoEl.className = 'availability-info help'; // Reset class
-      timeSlotField.style.display = "none"; // Hide time slot by default
-      timeSlotSelect.value = ""; // Reset time slot selection
+      availabilityInfoEl.textContent = '';
+      availabilityInfoEl.className = 'availability-info help';
+      timeSlotField.style.display = "none";
+      timeSlotSelect.value = "";
       timeSlotSelect.required = false;
-
 
       const dateValue = input.value;
       if (!dateValue) return;
 
-      const dateObj = new Date(dateValue + "T00:00:00"); // Ensure local timezone interpretation
+      const dateObj = new Date(dateValue + "T00:00:00");
       const day = dateObj.getDay();
       const formattedDate = dateObj.toISOString().split('T')[0];
 
       if (HOLIDAYS.includes(formattedDate)) {
         showMessage("Selected date is a holiday. Please choose another date.", "error");
-        input.value = ''; // Clear the invalid date
+        input.value = '';
         input.focus();
         return;
       }
 
       if (![1, 3, 6].includes(day)) {
         showMessage("Replacement can only be scheduled on Monday, Wednesday, or Saturday.", "error");
-        input.value = ''; // Clear the invalid date
+        input.value = '';
         input.focus();
         return;
       }
       
-      // If it's Monday or Wednesday, fetch availability directly
-      if (day === 1 || day === 3) { // Monday or Wednesday
+      if (day === 1 || day === 3) {
         timeSlotField.style.display = "none";
         timeSlotSelect.required = false;
         fetchSlotAvailability(dateValue, "", dateEntryElement);
-      } else if (day === 6) { // Saturday
+      } else if (day === 6) {
         timeSlotField.style.display = "block";
         timeSlotSelect.required = true;
-        // For Saturday, availability will be fetched when a time slot is selected via handleTimeSlotChange
         availabilityInfoEl.textContent = "Please select a time slot for Saturday.";
         availabilityInfoEl.className = 'availability-info help availability-checking';
       }
@@ -433,9 +421,8 @@
         const availabilityInfoEl = dateEntryElement.querySelector(".availability-info");
         availabilityInfoEl.textContent = "Checking availability...";
         availabilityInfoEl.className = 'availability-info help availability-checking';
-        availabilityInfoEl.dataset.booked = "0"; // Reset
-        availabilityInfoEl.dataset.maxCapacity = "0"; // Reset
-
+        availabilityInfoEl.dataset.booked = "0";
+        availabilityInfoEl.dataset.maxCapacity = "0";
 
         try {
             const checkUrl = `${scriptUrl}?action=checkSlot&date=${date}&slot=${encodeURIComponent(slot)}`;
@@ -455,11 +442,11 @@
             const availableSlots = data.maxCapacity - data.count;
             availabilityInfoEl.textContent = `Available slots: ${availableSlots} / ${data.maxCapacity}`;
 
-            if (data.maxCapacity === 0) { // Should not happen if sheet2 is set up
+            if (data.maxCapacity === 0) {
                  availabilityInfoEl.className = 'availability-info help availability-red';
             } else if (availableSlots <= 0) {
                 availabilityInfoEl.className = 'availability-info help availability-red';
-            } else if (availableSlots / data.maxCapacity <= 0.5) { // 50% or less available
+            } else if (availableSlots / data.maxCapacity <= 0.5) {
                 availabilityInfoEl.className = 'availability-info help availability-orange';
             } else {
                 availabilityInfoEl.className = 'availability-info help availability-green';
@@ -473,25 +460,25 @@
     }
     
     function handleReset() {
-        // Standard form reset clears inputs. We also need to clear dynamic student blocks.
         studentsContainer.innerHTML = "";
-        addStudent(); // Add back one default student block
+        addStudent();
     }
 
     function showMessage(text, type) {
-      message.textContent = text;
-      message.className = type; // This will be 'success', 'error', or 'warning'
-      message.style.display = "block";
-      // Automatically hide after 5 seconds, but allow manual hide if another message comes
-      if (message.timeoutId) clearTimeout(message.timeoutId);
-      message.timeoutId = setTimeout(() => {
-          // Fade out effect
-          message.style.opacity = '0';
-          setTimeout(() => {
-              message.style.display = "none";
-              message.style.opacity = '1'; // Reset opacity for next time
-          }, 500); // Match this with transition duration if any
-      }, 5000);
+        message.innerHTML = text; // MODIFIED from textContent to innerHTML
+        message.className = type;
+        message.style.display = "block";
+
+        const timeoutDuration = type === 'success' ? 15000 : 5000;
+
+        if (message.timeoutId) clearTimeout(message.timeoutId);
+        message.timeoutId = setTimeout(() => {
+            message.style.opacity = '0';
+            setTimeout(() => {
+                message.style.display = "none";
+                message.style.opacity = '1';
+            }, 500);
+        }, timeoutDuration);
     }
 
     function hideMessage() {
@@ -500,6 +487,50 @@
         message.style.opacity = '1';
     }
 
+    function generateCalendarLink(booking) {
+        const { studentName, date, timeSlot } = booking;
+        const title = `Class Replacement: ${studentName}`;
+        const location = "Chumbaka Sibu (Veritas Academy)"; // You can change this location
+        const details = `Replacement class scheduled for ${studentName}. If you need to make changes, please contact us.`;
+
+        let startHour, endHour;
+
+        if (timeSlot) { // Handles "9am - 10am", "2pm - 3pm", etc.
+            const [startTimeStr, endTimeStr] = timeSlot.split(' - ');
+            let startH = parseInt(startTimeStr);
+            if (startTimeStr.includes('pm') && startH !== 12) startH += 12;
+            
+            let endH = parseInt(endTimeStr);
+            if (endTimeStr.includes('pm') && endH !== 12) endH += 12;
+            
+            startHour = startH;
+            endHour = endH;
+        } else { // Default time for Monday/Wednesday
+            startHour = 15; // 3:00 PM
+            endHour = 17;   // 5:00 PM
+        }
+        
+        const startDate = new Date(`${date}T${String(startHour).padStart(2, '0')}:00:00`);
+        const endDate = new Date(`${date}T${String(endHour).padStart(2, '0')}:00:00`);
+
+        const formatToUTC = (d) => d.toISOString().replace(/-|:|\.\d+/g, "");
+        const datesParam = `${formatToUTC(startDate)}/${formatToUTC(endDate)}`;
+
+        const url = new URL('https://www.google.com/calendar/render');
+        url.searchParams.append('action', 'TEMPLATE');
+        url.searchParams.append('text', title);
+        url.searchParams.append('dates', datesParam);
+        url.searchParams.append('details', details);
+        url.searchParams.append('location', location);
+
+        return `<p style="margin-top: 0.5rem;">
+                    <strong>${studentName} on ${date} ${timeSlot ? `(${timeSlot})` : ''}</strong><br>
+                    <a href="${url.href}" target="_blank" rel="noopener noreferrer" class="button is-small is-link is-light mt-1">
+                        <span class="icon is-small"><i class="fab fa-google"></i></span>
+                        <span>Add to Google Calendar</span>
+                    </a>
+                </p>`;
+    }
   </script>
 </body>
 </html>
