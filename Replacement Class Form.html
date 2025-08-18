@@ -1,536 +1,854 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Class Replacement Form</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    /* Message box styling for top-right corner */
-    #message {
-      display: none;
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      max-width: 350px;
-      padding: 1rem;
-      border-radius: 4px;
-      text-align: left; /* Changed for better readability in corner */
-      z-index: 1050; /* Ensure it's above other content */
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }
-    .success { background-color: #48c774; color: white; }
-    .error { background-color: #f14668; color: white; }
-    .warning { background-color: #ffdd57; color: rgba(0, 0, 0, 0.7); }
-    .info { background-color: #3273dc; color: white; } /* For info messages like 'checking' */
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Class Replacement Form</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+    <style>
+        /* ==================================== */
+        /* Design System: Colors & Variables    */
+        /* ==================================== */
+        :root {
+            /* Primary Colors */
+            --chumbaka-red: #DC143C;
+            --dark-red: #B91C3C;
+            --light-red: #FF3860;
+            --chumbaka-gradient: linear-gradient(45deg, var(--chumbaka-red), var(--light-red));
 
-    .date-entry { margin-bottom: 1rem; }
-    .note { font-size: 0.9rem; color: #555; margin-top: 0.25rem; }
-    .logo-container { text-align: center; margin-top: 1rem; }
-    .logo-container img { max-height: 80px; }
-    .hero .title { text-align: center; }
-    .day-restriction-note {
-      background-color: #f5f5f5;
-      padding: 0.5rem;
-      border-radius: 4px;
-      margin-bottom: 1rem;
-      font-size: 0.9rem;
-    }
-    .availability-info {
-        font-size: 0.9rem;
-        margin-top: 0.5rem;
-        font-weight: bold;
-    }
-    .availability-green { color: #257942; }
-    .availability-orange { color: #f0ad4e; }
-    .availability-red { color: #d9534f; }
-    .availability-checking { color: #7a7a7a; }
-  </style>
+            /* Neutral Colors */
+            --black: #1a1a1a;
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --grey: #6B7280;
+            --light-grey: #F3F4F6;
+            --dark-grey: #374151;
+            --white: #FFFFFF;
+
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+
+            /* Spacing */
+            --spacing-xs: 8px;
+            --spacing-sm: 16px;
+            --spacing-md: 24px;
+            --spacing-lg: 40px;
+        }
+
+        /* ==================================== */
+        /* Base & Typography Styles             */
+        /* ==================================== */
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            background-color: var(--white);
+            overflow-x: hidden;
+            padding: var(--spacing-md);
+        }
+
+        h1, h2, h3, .title, .subtitle {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .title {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-lg);
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: var(--chumbaka-red);
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .note {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* ==================================== */
+        /* Layout & Containers                  */
+        /* ==================================== */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-top: 2rem;
+            margin-bottom: var(--spacing-lg);
+        }
+        .logo-container img {
+            max-width: 500px;
+            height: auto;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* Glassmorphism Effect for Main Form */
+        .glass-box {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: var(--spacing-sm);
+            box-shadow: var(--shadow-xl);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Subtle Depth for Student Blocks */
+        .box {
+            background-color: var(--white);
+            box-shadow: var(--shadow-md);
+            border-radius: 16px;
+            padding: var(--spacing-sm);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .box:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .date-entry {
+            background-color: var(--light-grey) !important;
+            padding: var(--spacing-xs) !important;
+            border-radius: 12px !important;
+            box-shadow: none !important;
+        }
+
+        .day-restriction-note {
+            background-color: var(--light-grey);
+            padding: var(--spacing-sm);
+            border-radius: 12px;
+            margin-bottom: var(--spacing-md);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* ==================================== */
+        /* Buttons & Controls                   */
+        /* ==================================== */
+        .button {
+            border-radius: 12px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            transform: translateY(0);
+        }
+
+        /* Primary Button */
+        .button.is-primary {
+            background: var(--chumbaka-gradient);
+            color: var(--white);
+            border: none;
+            box-shadow: var(--shadow-md);
+            display: flex; /* ADDED */
+            justify-content: center; /* ADDED */
+            align-items: center; /* ADDED */
+        }
+        .button.is-primary:hover, .button.is-primary:focus {
+            background: var(--dark-red);
+            color: var(--white);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        /* Custom Loading Animation for Primary Button */
+        .button.is-primary.is-loading .submit-text, .button.is-primary.is-loading .icon {
+            display: none;
+        }
+        .button.is-primary .loading-dots {
+            display: none;
+            text-align: center;
+        }
+        .button.is-primary.is-loading .loading-dots {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 1.5rem; /* Ensure button height is maintained */
+        }
+        .loading-dots .dot {
+            width: 8px;
+            height: 8px;
+            margin: 0 4px;
+            background-color: var(--white);
+            border-radius: 50%;
+            display: inline-block;
+            opacity: 0.5;
+            transform: scale(0.6);
+            animation: dot-pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .loading-dots .dot:nth-child(2) { animation-delay: 0.15s; }
+        .loading-dots .dot:nth-child(3) { animation-delay: 0.3s; }
+        .loading-dots .dot:nth-child(4) { animation-delay: 0.45s; }
+
+        @keyframes dot-pulse {
+            0%, 100% { transform: scale(0.6); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+
+        /* Secondary Button (Contact) */
+        .button.is-light {
+            background-color: var(--white);
+            color: var(--text-secondary);
+            border: 1px solid var(--grey);
+        }
+        .button.is-light:hover, .button.is-light:focus {
+            background-color: var(--light-grey);
+            border-color: var(--text-secondary);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Tertiary (Info) Button */
+        .button.is-info {
+            background-color: var(--dark-grey);
+            color: var(--white);
+            border: none;
+        }
+        .button.is-info:hover, .button.is-info:focus {
+            background-color: var(--black);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Link/Action button styles */
+        .button.is-link {
+            background-color: #3273dc;
+            color: white;
+            border-color: transparent;
+        }
+        .button.is-link:hover, .button.is-link:focus {
+            background-color: #2762be;
+            border-color: transparent;
+        }
+
+        /* Danger button styles */
+        .button.is-danger {
+            background-color: var(--chumbaka-red);
+            border-color: var(--chumbaka-red);
+        }
+        .button.is-danger.is-outlined {
+            color: var(--chumbaka-red);
+            border-color: var(--chumbaka-red);
+            background-color: transparent;
+        }
+        .button.is-danger.is-outlined:hover {
+            background-color: var(--chumbaka-red);
+            color: var(--white);
+        }
+
+        /* Ripple Effect */
+        .button::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, var(--white) 10%, transparent 10.01%);
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transform: scale(10, 10);
+            opacity: 0;
+            transition: transform .6s, opacity 1s;
+        }
+        .button:not(.is-loading):active::after {
+            transform: scale(0, 0);
+            opacity: .2;
+            transition: 0s;
+        }
+
+        /* ==================================== */
+        /* Message & Status Styles              */
+        /* ==================================== */
+        #message {
+            display: none;
+            position: fixed;
+            top: var(--spacing-md);
+            right: var(--spacing-md);
+            max-width: 350px;
+            padding: 1rem;
+            border-radius: 16px;
+            text-align: left;
+            z-index: 1050;
+            box-shadow: var(--shadow-lg);
+            transition: opacity 0.5s ease-out;
+        }
+        .success { background-color: #48c774; color: white; }
+        .success a { color: var(--light-grey) !important; }
+        .error { background-color: #f14668; color: white; }
+        .warning { background-color: #ffdd57; color: rgba(0, 0, 0, 0.7); }
+        .info { background-color: #3273dc; color: white; }
+
+        .availability-info {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            font-weight: bold;
+        }
+        .availability-green { color: #48c774; }
+        .availability-orange { color: #ffdd57; }
+        .availability-red { color: var(--dark-red); }
+        .availability-checking { color: var(--grey); }
+
+        /* ==================================== */
+        /* Animations                           */
+        /* ==================================== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .animate-in {
+            opacity: 0;
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        .logo-container, h1, #form .day-restriction-note, .field:not(:first-of-type) {
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            opacity: 0;
+        }
+
+        /* Staggered animation delays for sequential loading */
+        .logo-container { animation-delay: 0.5s; }
+        h1 { animation-delay: 0.8s; }
+        #form .day-restriction-note { animation-delay: 1.1s; }
+        .field:nth-of-type(1) { animation-delay: 1.4s; }
+        .field:nth-of-type(2) { animation-delay: 1.7s; }
+        .field:nth-of-type(3) { animation-delay: 2.0s; }
+
+        /* Media queries for responsive typography and layout */
+        @media (max-width: 768px) {
+            .logo-container img { max-width: 300px; }
+            .title { font-size: 2.5rem; }
+            .subtitle { font-size: 1.25rem; }
+        }
+        @media (max-width: 480px) {
+            .logo-container img { max-width: 220px; }
+            .title { font-size: 1.5rem; }
+            .subtitle { font-size: 1rem; }
+            .glass-box { padding: var(--spacing-xs); }
+        }
+    </style>
 </head>
 <body>
-  <div class="logo-container">
-    <img src="animated-chumbaka-with-tag.gif"
-         onerror="this.onerror=null; this.src='https://placehold.co/200x80/EBF5FB/17202A?text=Logo+Error&font=roboto';">
-  </div>
-
-  <div>
-    <h1 class="title" align="center">Class Replacement Form</h1>
-  </div>
-
-  <form id="form" class="container mt-5" style="max-width: 700px;">
-    <div class="day-restriction-note">
-      <strong>Note:</strong> Replacements are only available on <strong>Mondays, Wednesdays, and Saturdays</strong> (excluding holidays). Capacities are limited.
+    <div class="logo-container">
+        <img src="animated-chumbaka-with-tag.gif" alt="CHUMBAKA Logo"
+             onerror="this.onerror=null; this.src='https://placehold.co/200x80/EBF5FB/17202A?text=Logo+Error&font=roboto';">
     </div>
 
-    <div id="students-container">
-      </div>
-
-    <div class="field">
-      <button type="button" class="button is-info" onclick="addStudent()">
-        <span class="icon"><i class="fas fa-user-plus"></i></span>
-        <span>Add Another Student</span>
-      </button>
+    <div>
+        <h1 class="title" align="center">Class Replacement Form</h1>
     </div>
 
-    <div class="field is-grouped">
-      <div class="control">
-        <button class="button is-primary" type="submit" id="submit-button">
-          <span class="icon"><i class="fas fa-paper-plane"></i></span><span>Submit Requests</span>
-        </button>
-      </div>
-      <div class="control">
-        <button class="button is-light" type="reset" onclick="handleReset()">
-          <span class="icon"><i class="fas fa-undo"></i></span><span>Reset Form</span>
-        </button>
-      </div>
-    </div>
-  </form>
+    <form id="form" class="container glass-box mt-5">
+        <div class="day-restriction-note">
+            <strong>Note:</strong> Replacements are only available on <strong>Mondays, Wednesdays, and Saturdays</strong> (excluding holidays). Capacities are limited.
+        </div>
 
-  <div id="message" aria-live="polite"></div>
+        <div id="students-container">
+        </div>
 
-  <script>
-    const form = document.getElementById("form");
-    const studentsContainer = document.getElementById("students-container");
-    const message = document.getElementById("message");
-    const submitBtn = document.getElementById("submit-button");
+        <div class="field mt-5">
+            <button type="button" class="button is-info" onclick="addStudent()">
+                <span class="icon"><i class="fas fa-user-plus"></i></span>
+                <span>Add Another Student</span>
+            </button>
+        </div>
 
-    // IMPORTANT: Replace with your actual Google Apps Script URL
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbwo8sXdIt697VB-wwSjr_yk9iqiHkPIa82ZDvVS5O3ZHdx94J6oFsDzzVA2ALCwv2P6ug/exec";
+        <div class="field is-grouped">
+            <div class="control">
+                <button class="button is-primary" type="submit" id="submit-button">
+                    <span class="submit-text">Submit Requests</span>
+                    <span class="loading-dots">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </span>
+                </button>
+            </div>
+            <div class="control">
+                <button class="button is-light" type="reset" onclick="handleReset()">
+                    <span class="icon"><i class="fas fa-undo"></i></span><span>Reset Form</span>
+                </button>
+            </div>
+        </div>
+    </form>
 
-    // List of holidays (YYYY-MM-DD format) - Keep this updated
-    const HOLIDAYS = [
-      "2024-02-01", "2024-06-07", "2024-09-20", "2024-10-11", "2024-12-27",
-      "2024-03-31", "2024-06-02", "2024-09-01", "2024-09-15", "2024-12-22", "2024-12-29",
-      "2025-01-01", "2025-01-29", "2025-06-04", "2025-09-17", "2025-12-24", "2025-12-31",
-      // Add more holidays for future years as needed
-      "2025-02-10", "2025-02-11", // Example: CNY 2025
-      "2025-04-18", // Example: Good Friday 2025
-      "2025-05-01", // Example: Labour Day 2025
-      "2025-05-12", // Example: Wesak Day 2025
-      "2025-06-02", // Example: Agong's Birthday 2025
-      "2025-06-07", // Example: Gawai Dayak 2025 (Adjust if needed)
-      "2025-08-31", // Example: National Day 2025
-      "2025-09-01", // Example: National Day Holiday 2025
-      "2025-09-16", // Example: Malaysia Day 2025
-      "2025-10-20", // Example: Prophet Muhammad's Birthday 2025 (Approx)
-      "2025-10-31", // Example: Deepavali 2025 (Approx)
-      "2025-12-25"  // Example: Christmas Day 2025
-    ];
+    <div id="message" aria-live="polite"></div>
 
-    window.addEventListener("DOMContentLoaded", () => {
-      addStudent(); // Start with one student block
-    });
+    <script>
+        const form = document.getElementById("form");
+        const studentsContainer = document.getElementById("students-container");
+        const message = document.getElementById("message");
+        const submitBtn = document.getElementById("submit-button");
 
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        submitBtn.classList.add("is-loading");
-        submitBtn.disabled = true;
-        hideMessage();
+        // IMPORTANT: Replace with your actual Google Apps Script URL
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbwo8sXdIt697VB-wwSjr_yk9iqiHkPIa82ZDvVS5O3ZHdx94J6oFsDzzVA2ALCwv2P6ug/exec";
 
-        const successfulBookings = []; // To store details for calendar links
+        // List of holidays (YYYY-MM-DD format) - Keep this updated
+        const HOLIDAYS = [
+          "2024-02-01", "2024-06-07", "2024-09-20", "2024-10-11", "2024-12-27",
+          "2024-03-31", "2024-06-02", "2024-09-01", "2024-09-15", "2024-12-22", "2024-12-29",
+          "2025-01-01", "2025-01-29", "2025-06-04", "2025-09-17", "2025-12-24", "2025-12-31",
+          // Add more holidays for future years as needed
+          "2025-02-10", "2025-02-11", // Example: CNY 2025
+          "2025-04-18", // Example: Good Friday 2025
+          "2025-05-01", // Example: Labour Day 2025
+          "2025-05-12", // Example: Wesak Day 2025
+          "2025-06-02", // Example: Agong's Birthday 2025
+          "2025-06-07", // Example: Gawai Dayak 2025 (Adjust if needed)
+          "2025-08-31", // Example: National Day 2025
+          "2025-09-01", // Example: National Day Holiday 2025
+          "2025-09-16", // Example: Malaysia Day 2025
+          "2025-10-20", // Example: Prophet Muhammad's Birthday 2025 (Approx)
+          "2025-10-31", // Example: Deepavali 2025 (Approx)
+          "2025-12-25"  // Example: Christmas Day 2025
+        ];
 
-        try {
-            const studentBlocks = document.querySelectorAll(".student-block");
-            if (studentBlocks.length === 0) {
-                showMessage("Please add at least one student.", "error");
+        window.addEventListener("DOMContentLoaded", () => {
+          addStudent();
+        });
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            submitBtn.classList.add("is-loading");
+            submitBtn.disabled = true;
+            hideMessage();
+
+            const successfulBookings = [];
+
+            try {
+                const studentBlocks = document.querySelectorAll(".student-block");
+                if (studentBlocks.length === 0) {
+                    showMessage("Please add at least one student.", "error");
+                    return;
+                }
+
+                let allSubmissionsSuccessful = true;
+
+                for (const studentBlock of studentBlocks) {
+                    const studentNameInput = studentBlock.querySelector("input[name='student_name']");
+                    const studentName = studentNameInput.value.trim();
+                    if (!studentName) {
+                        showMessage("Please enter a valid student name for all students.", "error");
+                        studentNameInput.focus();
+                        allSubmissionsSuccessful = false;
+                        break;
+                    }
+
+                    const dateEntries = studentBlock.querySelectorAll(".date-entry");
+                    if (dateEntries.length === 0) {
+                        showMessage(`Please add at least one replacement date for ${studentName}.`, "warning");
+                        allSubmissionsSuccessful = false;
+                        continue;
+                    }
+
+                    for (const entry of dateEntries) {
+                        const dateInput = entry.querySelector("input[name='date_of_replacement']");
+                        const slotSelect = entry.querySelector("select[name='time_slot']");
+                        const dateValue = dateInput.value;
+                        const timeSlot = slotSelect.value || "";
+
+                        if (!dateValue) {
+                            showMessage(`Please enter a date for ${studentName}.`, "error");
+                            dateInput.focus();
+                            allSubmissionsSuccessful = false;
+                            break;
+                        }
+
+                        const dateObj = new Date(dateValue + "T00:00:00");
+                        const day = dateObj.getDay();
+                        const formattedDate = dateObj.toISOString().split('T')[0];
+
+                        if (HOLIDAYS.includes(formattedDate)) {
+                            showMessage(`${dateValue} is a holiday. Please choose another date for ${studentName}.`, "error");
+                            dateInput.focus();
+                            allSubmissionsSuccessful = false;
+                            break;
+                        }
+
+                        if (![1, 3, 6].includes(day)) {
+                            showMessage(`${dateValue} is not a Monday, Wednesday, or Saturday. Please correct for ${studentName}.`, "error");
+                            dateInput.focus();
+                            allSubmissionsSuccessful = false;
+                            break;
+                        }
+
+                        if (day === 6 && !timeSlot) {
+                            showMessage(`Please select a time slot for Saturday ${dateValue} for ${studentName}.`, "error");
+                            slotSelect.focus();
+                            allSubmissionsSuccessful = false;
+                            break;
+                        }
+
+                        const availabilityInfoEl = entry.querySelector(".availability-info");
+                        const currentMaxCapacity = parseInt(availabilityInfoEl.dataset.maxCapacity || "0");
+                        const currentBooked = parseInt(availabilityInfoEl.dataset.booked || "0");
+
+                        if (currentMaxCapacity > 0 && currentBooked >= currentMaxCapacity) {
+                            showMessage(`The slot for ${studentName} on ${dateValue} ${timeSlot ? '('+timeSlot+')' : ''} appears full. Submission might fail.`, "warning");
+                        }
+
+                        const formData = new FormData();
+                        formData.append("student_name", studentName);
+                        formData.append("date_of_replacement", dateValue);
+                        formData.append("time_slot", timeSlot);
+                        formData.append("action", "submitEntry");
+
+                        const submitResponse = await fetch(scriptUrl, { method: "POST", body: formData });
+                        const resultText = await submitResponse.text();
+
+                        if (!submitResponse.ok || resultText.toLowerCase().startsWith("error:")) {
+                            allSubmissionsSuccessful = false;
+                            showMessage(`Error for ${studentName} on ${dateValue}: ${resultText}`, "error");
+                            break;
+                        }
+                        successfulBookings.push({ studentName, date: dateValue, timeSlot });
+                    }
+                    if (!allSubmissionsSuccessful) break;
+                }
+
+                if (allSubmissionsSuccessful && successfulBookings.length > 0) {
+                    let successMessageHtml = `<b>Successfully submitted ${successfulBookings.length} replacement request(s)!</b>`;
+                    successfulBookings.forEach(booking => {
+                        successMessageHtml += generateCalendarLink(booking);
+                    });
+                    showMessage(successMessageHtml, "success");
+                    form.reset();
+                    handleReset();
+                } else if (successfulBookings.length === 0 && allSubmissionsSuccessful) {
+                    showMessage("No replacement requests were submitted. Please check your entries.", "warning");
+                }
+
+            } catch (error) {
+                console.error("Form submission error:", error);
+                showMessage(`An unexpected error occurred: ${error.message}`, "error");
+            } finally {
+                submitBtn.classList.remove("is-loading");
+                submitBtn.disabled = false;
+            }
+        });
+
+        function addStudent() {
+            const studentId = `student-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+            const studentBlock = document.createElement("div");
+            studentBlock.className = "box student-block";
+            studentBlock.id = studentId;
+            studentBlock.innerHTML = `
+                <h3 class="subtitle is-5">Student Information</h3>
+                <div class="field">
+                    <label class="label" for="student_name_${studentId}">Student Name(s)</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="text" name="student_name" id="student_name_${studentId}" placeholder="e.g., John Doe" required>
+                        <span class="icon is-left"><i class="fas fa-user"></i></span>
+                    </div>
+                </div>
+                <div class="date-entries-container">
+                </div>
+                <div class="field is-grouped is-grouped-right mt-3">
+                    <div class="control">
+                        <button type="button" class="button is-info is-small" onclick="addDateEntry(this)">
+                            <span class="icon is-small"><i class="fas fa-calendar-plus"></i></span>
+                            <span>Add Replacement Date</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <button type="button" class="button is-danger is-small is-outlined" onclick="removeStudent(this)">
+                            <span class="icon is-small"><i class="fas fa-user-minus"></i></span>
+                            <span>Remove This Student</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            studentsContainer.appendChild(studentBlock);
+            addDateEntry(studentBlock.querySelector(".button.is-info"));
+        }
+
+        function addDateEntry(button) {
+            const dateEntriesContainer = button.closest(".student-block").querySelector(".date-entries-container");
+            const today = new Date().toISOString().split("T")[0];
+            const dateEntryId = `date-entry-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+
+            const dateEntry = document.createElement("div");
+            dateEntry.className = "date-entry box is-light p-3";
+            dateEntry.id = dateEntryId;
+            dateEntry.innerHTML = `
+                <div class="field">
+                    <label class="label" for="date_replacement_${dateEntryId}">Replacement Date</label>
+                    <div class="control has-icons-left">
+                        <input class="input date-input" type="date" name="date_of_replacement" id="date_replacement_${dateEntryId}" min="${today}" required
+                                onchange="handleDateChange(this)" oninput="validateDayRealtime(this)">
+                        <span class="icon is-left"><i class="fas fa-calendar-alt"></i></span>
+                    </div>
+                </div>
+                <div class="field time-slot-field" style="display: none;">
+                    <label class="label" for="time_slot_${dateEntryId}">Time Slot (Required for Saturday)</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="time_slot" id="time_slot_${dateEntryId}" onchange="handleTimeSlotChange(this)">
+                                <option value="">-- Select a time slot --</option>
+                                <option value="9am - 10am">9am - 10am</option>
+                                <option value="10am - 11am">10am - 11am</option>
+                                <option value="11am - 12pm">11am - 12pm</option>
+                                <option value="2pm - 3pm">2pm - 3pm</option>
+                                <option value="3pm - 4pm">3pm - 4pm</option>
+                                <option value="4pm - 5pm">4pm - 5pm</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <p class="availability-info help"></p>
+                <div class="field mt-2">
+                    <button type="button" class="button is-danger is-outlined is-small" onclick="removeDateEntry(this)">
+                        <span class="icon is-small"><i class="fas fa-calendar-times"></i></span>
+                        <span>Remove This Date</span>
+                    </button>
+                </div>
+            `;
+            dateEntriesContainer.appendChild(dateEntry);
+        }
+
+        function removeStudent(button) {
+            button.closest(".student-block").remove();
+            if (studentsContainer.children.length === 0) {
+                addStudent();
+            }
+        }
+
+        function removeDateEntry(button) {
+            const dateEntryElement = button.closest(".date-entry");
+            dateEntryElement.remove();
+        }
+
+        function validateDayRealtime(input) {
+            const date = input.value;
+            const availabilityInfoEl = input.closest(".date-entry").querySelector(".availability-info");
+            availabilityInfoEl.textContent = '';
+            availabilityInfoEl.className = 'availability-info help';
+
+            if (!date) return;
+            const dateObj = new Date(date + "T00:00:00");
+            const day = dateObj.getDay();
+
+            if (HOLIDAYS.includes(date)) {
+                input.setCustomValidity("Selected date is a holiday. Please choose another date.");
+                input.reportValidity();
+                return;
+            } else if (![1, 3, 6].includes(day)) {
+                input.setCustomValidity("Replacement can only be on Monday, Wednesday, or Saturday.");
+                input.reportValidity();
+                return;
+            }
+            input.setCustomValidity("");
+        }
+
+        function handleDateChange(input) {
+            const dateEntryElement = input.closest(".date-entry");
+            const timeSlotField = dateEntryElement.querySelector(".time-slot-field");
+            const timeSlotSelect = dateEntryElement.querySelector("select[name='time_slot']");
+            const availabilityInfoEl = dateEntryElement.querySelector(".availability-info");
+
+            availabilityInfoEl.textContent = '';
+            availabilityInfoEl.className = 'availability-info help';
+            timeSlotField.style.display = "none";
+            timeSlotSelect.value = "";
+            timeSlotSelect.required = false;
+
+            const dateValue = input.value;
+            if (!dateValue) return;
+
+            const dateObj = new Date(dateValue + "T00:00:00");
+            const day = dateObj.getDay();
+            const formattedDate = dateObj.toISOString().split('T')[0];
+
+            if (HOLIDAYS.includes(formattedDate)) {
+                showMessage("Selected date is a holiday. Please choose another date.", "error");
+                input.value = '';
+                input.focus();
                 return;
             }
 
-            let allSubmissionsSuccessful = true;
-
-            for (const studentBlock of studentBlocks) {
-                const studentNameInput = studentBlock.querySelector("input[name='student_name']");
-                const studentName = studentNameInput.value.trim();
-                if (!studentName) {
-                    showMessage("Please enter a valid student name for all students.", "error");
-                    studentNameInput.focus();
-                    allSubmissionsSuccessful = false;
-                    break;
-                }
-
-                const dateEntries = studentBlock.querySelectorAll(".date-entry");
-                if (dateEntries.length === 0) {
-                    showMessage(`Please add at least one replacement date for ${studentName}.`, "warning");
-                    allSubmissionsSuccessful = false;
-                    continue;
-                }
-
-                for (const entry of dateEntries) {
-                    const dateInput = entry.querySelector("input[name='date_of_replacement']");
-                    const slotSelect = entry.querySelector("select[name='time_slot']");
-                    const dateValue = dateInput.value;
-                    const timeSlot = slotSelect.value || "";
-
-                    if (!dateValue) {
-                        showMessage(`Please enter a date for ${studentName}.`, "error");
-                        dateInput.focus();
-                        allSubmissionsSuccessful = false;
-                        break;
-                    }
-
-                    const dateObj = new Date(dateValue + "T00:00:00");
-                    const day = dateObj.getDay();
-                    const formattedDate = dateObj.toISOString().split('T')[0];
-
-                    if (HOLIDAYS.includes(formattedDate)) {
-                        showMessage(`${dateValue} is a holiday. Please choose another date for ${studentName}.`, "error");
-                        dateInput.focus();
-                        allSubmissionsSuccessful = false;
-                        break;
-                    }
-
-                    if (![1, 3, 6].includes(day)) {
-                        showMessage(`${dateValue} is not a Monday, Wednesday, or Saturday. Please correct for ${studentName}.`, "error");
-                        dateInput.focus();
-                        allSubmissionsSuccessful = false;
-                        break;
-                    }
-
-                    if (day === 6 && !timeSlot) {
-                        showMessage(`Please select a time slot for Saturday ${dateValue} for ${studentName}.`, "error");
-                        slotSelect.focus();
-                        allSubmissionsSuccessful = false;
-                        break;
-                    }
-
-                    const availabilityInfoEl = entry.querySelector(".availability-info");
-                    const currentMaxCapacity = parseInt(availabilityInfoEl.dataset.maxCapacity || "0");
-                    const currentBooked = parseInt(availabilityInfoEl.dataset.booked || "0");
-
-                    if (currentMaxCapacity > 0 && currentBooked >= currentMaxCapacity) {
-                        showMessage(`The slot for ${studentName} on ${dateValue} ${timeSlot ? '('+timeSlot+')' : ''} appears full. Submission might fail.`, "warning");
-                    }
-
-                    const formData = new FormData();
-                    formData.append("student_name", studentName);
-                    formData.append("date_of_replacement", dateValue);
-                    formData.append("time_slot", timeSlot);
-                    formData.append("action", "submitEntry");
-
-                    const submitResponse = await fetch(scriptUrl, { method: "POST", body: formData });
-                    const resultText = await submitResponse.text();
-
-                    if (!submitResponse.ok || resultText.toLowerCase().startsWith("error:")) {
-                        allSubmissionsSuccessful = false;
-                        showMessage(`Error for ${studentName} on ${dateValue}: ${resultText}`, "error");
-                        break;
-                    }
-                    // ADDITION: Store successful booking details
-                    successfulBookings.push({ studentName, date: dateValue, timeSlot });
-                }
-                if (!allSubmissionsSuccessful) break;
+            if (![1, 3, 6].includes(day)) {
+                showMessage("Replacement can only be scheduled on Monday, Wednesday, or Saturday.", "error");
+                input.value = '';
+                input.focus();
+                return;
             }
 
-            // MODIFICATION: Check successfulBookings array to build the success message
-            if (allSubmissionsSuccessful && successfulBookings.length > 0) {
-                let successMessageHtml = `<b>Successfully submitted ${successfulBookings.length} replacement request(s)!</b>`;
-                successfulBookings.forEach(booking => {
-                    successMessageHtml += generateCalendarLink(booking);
-                });
-                showMessage(successMessageHtml, "success");
-                form.reset();
-                handleReset();
-            } else if (successfulBookings.length === 0 && allSubmissionsSuccessful) {
-                showMessage("No replacement requests were submitted. Please check your entries.", "warning");
+            if (day === 1 || day === 3) {
+                timeSlotField.style.display = "none";
+                timeSlotSelect.required = false;
+                fetchSlotAvailability(dateValue, "", dateEntryElement);
+            } else if (day === 6) {
+                timeSlotField.style.display = "block";
+                timeSlotSelect.required = true;
+                availabilityInfoEl.textContent = "Please select a time slot for Saturday.";
+                availabilityInfoEl.className = 'availability-info help availability-checking';
             }
-
-        } catch (error) {
-            console.error("Form submission error:", error);
-            showMessage(`An unexpected error occurred: ${error.message}`, "error");
-        } finally {
-            submitBtn.classList.remove("is-loading");
-            submitBtn.disabled = false;
         }
-    });
 
-    function addStudent() {
-      const studentId = `student-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      const studentBlock = document.createElement("div");
-      studentBlock.className = "box student-block";
-      studentBlock.id = studentId;
-      studentBlock.innerHTML = `
-        <h3 class="subtitle is-5">Student Information</h3>
-        <div class="field">
-          <label class="label" for="student_name_${studentId}">Student Name(s)</label>
-          <div class="control has-icons-left">
-            <input class="input" type="text" name="student_name" id="student_name_${studentId}" placeholder="e.g., John Doe" required>
-            <span class="icon is-left"><i class="fas fa-user"></i></span>
-          </div>
-        </div>
-        <div class="date-entries-container">
-          </div>
-        <div class="field is-grouped is-grouped-right mt-3">
-          <div class="control">
-            <button type="button" class="button is-link is-small" onclick="addDateEntry(this)">
-              <span class="icon is-small"><i class="fas fa-calendar-plus"></i></span>
-              <span>Add Replacement Date</span>
-            </button>
-          </div>
-          <div class="control">
-            <button type="button" class="button is-danger is-small" onclick="removeStudent(this)">
-              <span class="icon is-small"><i class="fas fa-user-minus"></i></span>
-              <span>Remove This Student</span>
-            </button>
-          </div>
-        </div>
-      `;
-      studentsContainer.appendChild(studentBlock);
-      addDateEntry(studentBlock.querySelector(".button.is-link")); // Add one date entry by default
-    }
+        function handleTimeSlotChange(selectElement) {
+            const dateEntryElement = selectElement.closest(".date-entry");
+            const dateInput = dateEntryElement.querySelector("input[name='date_of_replacement']");
+            const dateValue = dateInput.value;
+            const timeSlotValue = selectElement.value;
 
-    function addDateEntry(button) {
-      const dateEntriesContainer = button.closest(".student-block").querySelector(".date-entries-container");
-      const today = new Date().toISOString().split("T")[0];
-      const dateEntryId = `date-entry-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-
-      const dateEntry = document.createElement("div");
-      dateEntry.className = "date-entry box is-light p-3"; // Added some padding and light bg
-      dateEntry.id = dateEntryId;
-      dateEntry.innerHTML = `
-        <div class="field">
-          <label class="label" for="date_replacement_${dateEntryId}">Replacement Date</label>
-          <div class="control has-icons-left">
-            <input class="input date-input" type="date" name="date_of_replacement" id="date_replacement_${dateEntryId}" min="${today}" required
-                   onchange="handleDateChange(this)" oninput="validateDayRealtime(this)">
-            <span class="icon is-left"><i class="fas fa-calendar-alt"></i></span>
-          </div>
-        </div>
-        <div class="field time-slot-field" style="display: none;">
-          <label class="label" for="time_slot_${dateEntryId}">Time Slot (Required for Saturday)</label>
-          <div class="control">
-            <div class="select is-fullwidth">
-              <select name="time_slot" id="time_slot_${dateEntryId}" onchange="handleTimeSlotChange(this)">
-                <option value="">-- Select a time slot --</option>
-                <option value="9am - 10am">9am - 10am</option>
-                <option value="10am - 11am">10am - 11am</option>
-                <option value="11am - 12pm">11am - 12pm</option>
-                <option value="2pm - 3pm">2pm - 3pm</option>
-                <option value="3pm - 4pm">3pm - 4pm</option>
-                <option value="4pm - 5pm">4pm - 5pm</option>
-                </select>
-            </div>
-          </div>
-        </div>
-        <p class="availability-info help"></p>
-        <div class="field mt-2">
-            <button type="button" class="button is-danger is-outlined is-small" onclick="removeDateEntry(this)">
-              <span class="icon is-small"><i class="fas fa-calendar-times"></i></span>
-              <span>Remove This Date</span>
-            </button>
-        </div>
-      `;
-      dateEntriesContainer.appendChild(dateEntry);
-    }
-
-    function removeStudent(button) {
-      button.closest(".student-block").remove();
-      if (studentsContainer.children.length === 0) {
-        addStudent();
-      }
-    }
-
-    function removeDateEntry(button) {
-      const dateEntryElement = button.closest(".date-entry");
-      dateEntryElement.remove();
-    }
-    
-    function validateDayRealtime(input) {
-        const date = input.value;
-        const availabilityInfoEl = input.closest(".date-entry").querySelector(".availability-info");
-        availabilityInfoEl.textContent = '';
-        availabilityInfoEl.className = 'availability-info help';
-
-        if (!date) return;
-        const dateObj = new Date(date + "T00:00:00");
-        const day = dateObj.getDay();
-
-        if (HOLIDAYS.includes(date)) {
-            input.setCustomValidity("Selected date is a holiday. Please choose another date.");
-            input.reportValidity();
-            return;
-        } else if (![1, 3, 6].includes(day)) {
-            input.setCustomValidity("Replacement can only be on Monday, Wednesday, or Saturday.");
-            input.reportValidity();
-            return;
+            if (dateValue && timeSlotValue) {
+                fetchSlotAvailability(dateValue, timeSlotValue, dateEntryElement);
+            } else if (dateValue && !timeSlotValue) {
+                const availabilityInfoEl = dateEntryElement.querySelector(".availability-info");
+                availabilityInfoEl.textContent = "Please select a time slot for Saturday.";
+                availabilityInfoEl.className = 'availability-info help availability-checking';
+            }
         }
-        input.setCustomValidity("");
-    }
 
-    function handleDateChange(input) {
-      const dateEntryElement = input.closest(".date-entry");
-      const timeSlotField = dateEntryElement.querySelector(".time-slot-field");
-      const timeSlotSelect = dateEntryElement.querySelector("select[name='time_slot']");
-      const availabilityInfoEl = dateEntryElement.querySelector(".availability-info");
-      
-      availabilityInfoEl.textContent = '';
-      availabilityInfoEl.className = 'availability-info help';
-      timeSlotField.style.display = "none";
-      timeSlotSelect.value = "";
-      timeSlotSelect.required = false;
-
-      const dateValue = input.value;
-      if (!dateValue) return;
-
-      const dateObj = new Date(dateValue + "T00:00:00");
-      const day = dateObj.getDay();
-      const formattedDate = dateObj.toISOString().split('T')[0];
-
-      if (HOLIDAYS.includes(formattedDate)) {
-        showMessage("Selected date is a holiday. Please choose another date.", "error");
-        input.value = '';
-        input.focus();
-        return;
-      }
-
-      if (![1, 3, 6].includes(day)) {
-        showMessage("Replacement can only be scheduled on Monday, Wednesday, or Saturday.", "error");
-        input.value = '';
-        input.focus();
-        return;
-      }
-      
-      if (day === 1 || day === 3) {
-        timeSlotField.style.display = "none";
-        timeSlotSelect.required = false;
-        fetchSlotAvailability(dateValue, "", dateEntryElement);
-      } else if (day === 6) {
-        timeSlotField.style.display = "block";
-        timeSlotSelect.required = true;
-        availabilityInfoEl.textContent = "Please select a time slot for Saturday.";
-        availabilityInfoEl.className = 'availability-info help availability-checking';
-      }
-    }
-
-    function handleTimeSlotChange(selectElement) {
-        const dateEntryElement = selectElement.closest(".date-entry");
-        const dateInput = dateEntryElement.querySelector("input[name='date_of_replacement']");
-        const dateValue = dateInput.value;
-        const timeSlotValue = selectElement.value;
-
-        if (dateValue && timeSlotValue) {
-            fetchSlotAvailability(dateValue, timeSlotValue, dateEntryElement);
-        } else if (dateValue && !timeSlotValue) {
+        async function fetchSlotAvailability(date, slot, dateEntryElement) {
             const availabilityInfoEl = dateEntryElement.querySelector(".availability-info");
-            availabilityInfoEl.textContent = "Please select a time slot for Saturday.";
+            availabilityInfoEl.textContent = "Checking availability...";
             availabilityInfoEl.className = 'availability-info help availability-checking';
-        }
-    }
+            availabilityInfoEl.dataset.booked = "0";
+            availabilityInfoEl.dataset.maxCapacity = "0";
 
-    async function fetchSlotAvailability(date, slot, dateEntryElement) {
-        const availabilityInfoEl = dateEntryElement.querySelector(".availability-info");
-        availabilityInfoEl.textContent = "Checking availability...";
-        availabilityInfoEl.className = 'availability-info help availability-checking';
-        availabilityInfoEl.dataset.booked = "0";
-        availabilityInfoEl.dataset.maxCapacity = "0";
+            try {
+                const checkUrl = `${scriptUrl}?action=checkSlot&date=${date}&slot=${encodeURIComponent(slot)}`;
+                const response = await fetch(checkUrl);
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                const data = await response.json();
 
-        try {
-            const checkUrl = `${scriptUrl}?action=checkSlot&date=${date}&slot=${encodeURIComponent(slot)}`;
-            const response = await fetch(checkUrl);
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
-            }
-            const data = await response.json();
+                if (data.error) {
+                    throw new Error(data.error);
+                }
 
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            
-            availabilityInfoEl.dataset.booked = data.count;
-            availabilityInfoEl.dataset.maxCapacity = data.maxCapacity;
+                availabilityInfoEl.dataset.booked = data.count;
+                availabilityInfoEl.dataset.maxCapacity = data.maxCapacity;
 
-            const availableSlots = data.maxCapacity - data.count;
-            availabilityInfoEl.textContent = `Available slots: ${availableSlots} / ${data.maxCapacity}`;
+                const availableSlots = data.maxCapacity - data.count;
+                availabilityInfoEl.textContent = `Available slots: ${availableSlots} / ${data.maxCapacity}`;
 
-            if (data.maxCapacity === 0) {
-                 availabilityInfoEl.className = 'availability-info help availability-red';
-            } else if (availableSlots <= 0) {
+                if (data.maxCapacity === 0) {
+                     availabilityInfoEl.className = 'availability-info help availability-red';
+                } else if (availableSlots <= 0) {
+                    availabilityInfoEl.className = 'availability-info help availability-red';
+                } else if (availableSlots / data.maxCapacity <= 0.5) {
+                    availabilityInfoEl.className = 'availability-info help availability-orange';
+                } else {
+                    availabilityInfoEl.className = 'availability-info help availability-green';
+                }
+
+            } catch (error) {
+                console.error("Error fetching slot availability:", error);
+                availabilityInfoEl.textContent = "Could not check availability.";
                 availabilityInfoEl.className = 'availability-info help availability-red';
-            } else if (availableSlots / data.maxCapacity <= 0.5) {
-                availabilityInfoEl.className = 'availability-info help availability-orange';
+            }
+        }
+
+        function handleReset() {
+            studentsContainer.innerHTML = "";
+            addStudent();
+        }
+
+        function showMessage(text, type) {
+            message.innerHTML = text;
+            message.className = type;
+            message.style.display = "block";
+
+            const timeoutDuration = type === 'success' ? 15000 : 5000;
+
+            if (message.timeoutId) clearTimeout(message.timeoutId);
+            message.timeoutId = setTimeout(() => {
+                message.style.opacity = '0';
+                setTimeout(() => {
+                    message.style.display = "none";
+                    message.style.opacity = '1';
+                }, 500);
+            }, timeoutDuration);
+        }
+
+        function hideMessage() {
+            if (message.timeoutId) clearTimeout(message.timeoutId);
+            message.style.display = "none";
+            message.style.opacity = '1';
+        }
+
+        function generateCalendarLink(booking) {
+            const { studentName, date, timeSlot } = booking;
+            const title = `Class Replacement: ${studentName}`;
+            const location = "Chumbaka Sibu (Veritas Academy)";
+            const details = `Replacement class scheduled for ${studentName}. If you need to make changes, please contact us.`;
+
+            let startHour, endHour;
+
+            if (timeSlot) {
+                const [startTimeStr, endTimeStr] = timeSlot.split(' - ');
+                let startH = parseInt(startTimeStr);
+                if (startTimeStr.includes('pm') && startH !== 12) startH += 12;
+
+                let endH = parseInt(endTimeStr);
+                if (endTimeStr.includes('pm') && endH !== 12) endH += 12;
+
+                startHour = startH;
+                endHour = endH;
             } else {
-                availabilityInfoEl.className = 'availability-info help availability-green';
+                startHour = 15;
+                endHour = 17;
             }
 
-        } catch (error) {
-            console.error("Error fetching slot availability:", error);
-            availabilityInfoEl.textContent = "Could not check availability.";
-            availabilityInfoEl.className = 'availability-info help availability-red';
+            const startDate = new Date(`${date}T${String(startHour).padStart(2, '0')}:00:00`);
+            const endDate = new Date(`${date}T${String(endHour).padStart(2, '0')}:00:00`);
+
+            const formatToUTC = (d) => d.toISOString().replace(/-|:|\.\d+/g, "");
+            const datesParam = `${formatToUTC(startDate)}/${formatToUTC(endDate)}`;
+
+            const url = new URL('https://www.google.com/calendar/render');
+            url.searchParams.append('action', 'TEMPLATE');
+            url.searchParams.append('text', title);
+            url.searchParams.append('dates', datesParam);
+            url.searchParams.append('details', details);
+            url.searchParams.append('location', location);
+
+            return `<p style="margin-top: 0.5rem;">
+                        <strong>${studentName} on ${date} ${timeSlot ? `(${timeSlot})` : ''}</strong><br>
+                        <a href="${url.href}" target="_blank" rel="noopener noreferrer" class="button is-small is-link mt-1">
+                            <span class="icon is-small"><i class="fab fa-google"></i></span>
+                            <span>Add to Google Calendar</span>
+                        </a>
+                    </p>`;
         }
-    }
-    
-    function handleReset() {
-        studentsContainer.innerHTML = "";
-        addStudent();
-    }
-
-    function showMessage(text, type) {
-        message.innerHTML = text; // MODIFIED from textContent to innerHTML
-        message.className = type;
-        message.style.display = "block";
-
-        const timeoutDuration = type === 'success' ? 15000 : 5000;
-
-        if (message.timeoutId) clearTimeout(message.timeoutId);
-        message.timeoutId = setTimeout(() => {
-            message.style.opacity = '0';
-            setTimeout(() => {
-                message.style.display = "none";
-                message.style.opacity = '1';
-            }, 500);
-        }, timeoutDuration);
-    }
-
-    function hideMessage() {
-        if (message.timeoutId) clearTimeout(message.timeoutId);
-        message.style.display = "none";
-        message.style.opacity = '1';
-    }
-
-    function generateCalendarLink(booking) {
-        const { studentName, date, timeSlot } = booking;
-        const title = `Class Replacement: ${studentName}`;
-        const location = "Chumbaka Sibu (Veritas Academy)"; // You can change this location
-        const details = `Replacement class scheduled for ${studentName}. If you need to make changes, please contact us.`;
-
-        let startHour, endHour;
-
-        if (timeSlot) { // Handles "9am - 10am", "2pm - 3pm", etc.
-            const [startTimeStr, endTimeStr] = timeSlot.split(' - ');
-            let startH = parseInt(startTimeStr);
-            if (startTimeStr.includes('pm') && startH !== 12) startH += 12;
-            
-            let endH = parseInt(endTimeStr);
-            if (endTimeStr.includes('pm') && endH !== 12) endH += 12;
-            
-            startHour = startH;
-            endHour = endH;
-        } else { // Default time for Monday/Wednesday
-            startHour = 15; // 3:00 PM
-            endHour = 17;   // 5:00 PM
-        }
-        
-        const startDate = new Date(`${date}T${String(startHour).padStart(2, '0')}:00:00`);
-        const endDate = new Date(`${date}T${String(endHour).padStart(2, '0')}:00:00`);
-
-        const formatToUTC = (d) => d.toISOString().replace(/-|:|\.\d+/g, "");
-        const datesParam = `${formatToUTC(startDate)}/${formatToUTC(endDate)}`;
-
-        const url = new URL('https://www.google.com/calendar/render');
-        url.searchParams.append('action', 'TEMPLATE');
-        url.searchParams.append('text', title);
-        url.searchParams.append('dates', datesParam);
-        url.searchParams.append('details', details);
-        url.searchParams.append('location', location);
-
-        return `<p style="margin-top: 0.5rem;">
-                    <strong>${studentName} on ${date} ${timeSlot ? `(${timeSlot})` : ''}</strong><br>
-                    <a href="${url.href}" target="_blank" rel="noopener noreferrer" class="button is-small is-link is-light mt-1">
-                        <span class="icon is-small"><i class="fab fa-google"></i></span>
-                        <span>Add to Google Calendar</span>
-                    </a>
-                </p>`;
-    }
-  </script>
+    </script>
 </body>
 </html>
