@@ -349,16 +349,23 @@
         .field:nth-of-type(2) { animation-delay: 1.7s; }
         .field:nth-of-type(3) { animation-delay: 2.0s; }
 
-        /* Media queries for responsive typography and layout */
+        /* Mobile-specific adjustments */
         @media (max-width: 768px) {
             .logo-container img { max-width: 300px; }
             .title { font-size: 2.5rem; }
             .subtitle { font-size: 1.25rem; }
-            .field.is-grouped.is-grouped-right {
-                flex-wrap: wrap;
+            .field.is-grouped {
+                flex-direction: column;
             }
-            .field.is-grouped.is-grouped-right .control {
-                margin-bottom: 0.5rem;
+            .field.is-grouped .control {
+                width: 100%;
+                margin-bottom: 0.75rem;
+            }
+            /* Specific fix for date buttons */
+            .date-buttons-container {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
             }
         }
         @media (max-width: 480px) {
@@ -394,9 +401,9 @@
             </button>
         </div>
 
-        <div class="field is-grouped">
+        <div class="field">
             <div class="control">
-                <button class="button is-primary" type="submit" id="submit-button">
+                <button class="button is-primary is-fullwidth" type="submit" id="submit-button">
                     <span class="submit-text">Submit Requests</span>
                     <span class="loading-dots">
                         <span class="dot"></span>
@@ -406,8 +413,10 @@
                     </span>
                 </button>
             </div>
+        </div>
+        <div class="field">
             <div class="control">
-                <button class="button is-light" type="button" onclick="handleReset()">
+                <button class="button is-light is-fullwidth" type="button" onclick="handleReset()">
                     <span class="icon"><i class="fas fa-undo"></i></span><span>Reset Form</span>
                 </button>
             </div>
@@ -608,7 +617,7 @@
                     <label class="label" for="date_replacement_${dateEntryId}">Replacement Date</label>
                     <div class="control has-icons-left">
                         <input class="input date-input" type="date" name="date_of_replacement" id="date_replacement_${dateEntryId}" min="${today}" required
-                                onchange="handleDateChange(this)" oninput="validateDayRealtime(this)">
+                                 onchange="handleDateChange(this)" oninput="validateDayRealtime(this)">
                         <span class="icon is-left"><i class="fas fa-calendar-alt"></i></span>
                     </div>
                 </div>
@@ -629,7 +638,7 @@
                     </div>
                 </div>
                 <p class="availability-info help"></p>
-                <div class="field is-grouped is-grouped-right mt-2">
+                <div class="field date-buttons-container is-grouped is-grouped-multiline is-fullwidth">
                     <div class="control">
                         <button type="button" class="button is-info is-small" onclick="addDateEntry(this.closest('.date-entries-container'))">
                             <span class="icon is-small"><i class="fas fa-calendar-plus"></i></span>
@@ -767,94 +776,85 @@
                 availabilityInfoEl.textContent = `Available slots: ${availableSlots} / ${data.maxCapacity}`;
 
                 if (data.maxCapacity === 0) {
-                     availabilityInfoEl.className = 'availability-info help availability-red';
-                } else if (availableSlots <= 0) {
                     availabilityInfoEl.className = 'availability-info help availability-red';
-                } else if (availableSlots / data.maxCapacity <= 0.5) {
+                    availabilityInfoEl.textContent = `Sorry, this slot is not available.`;
+                } else if (availableSlots <= 0) {
+                    availabilityInfoEl.className = 'availability-info help availability-orange';
+                    availabilityInfoEl.textContent = `This slot is full.`;
+                } else if (availableSlots < 3) {
                     availabilityInfoEl.className = 'availability-info help availability-orange';
                 } else {
                     availabilityInfoEl.className = 'availability-info help availability-green';
                 }
 
             } catch (error) {
-                console.error("Error fetching slot availability:", error);
-                availabilityInfoEl.textContent = "Could not check availability.";
+                console.error("Availability check error:", error);
+                availabilityInfoEl.textContent = "Error checking availability.";
                 availabilityInfoEl.className = 'availability-info help availability-red';
             }
         }
 
-        function handleReset() {
-            studentsContainer.innerHTML = "";
-            addStudent();
-            hideMessage(); // Ensure any previous messages are also hidden on reset.
-        }
-
-        function showMessage(text, type) {
-            message.innerHTML = text;
-            message.className = type;
+        function showMessage(msg, type) {
+            message.innerHTML = msg;
+            message.className = `is-size-7 message-box ${type}`;
             message.style.display = "block";
-
-            const timeoutDuration = type === 'success' ? 15000 : 5000;
-
-            if (message.timeoutId) clearTimeout(message.timeoutId);
-            message.timeoutId = setTimeout(() => {
-                message.style.opacity = '0';
-                setTimeout(() => {
-                    message.style.display = "none";
-                    message.style.opacity = '1';
-                }, 500);
-            }, timeoutDuration);
+            message.style.opacity = 1;
+            setTimeout(() => {
+                hideMessage();
+            }, 6000); // Hide after 6 seconds
         }
 
         function hideMessage() {
-            if (message.timeoutId) clearTimeout(message.timeoutId);
-            message.style.display = "none";
-            message.style.opacity = '1';
+            message.style.opacity = 0;
+            setTimeout(() => {
+                message.style.display = "none";
+            }, 500); // Match CSS transition duration
         }
 
+        function handleReset() {
+            studentsContainer.innerHTML = '';
+            addStudent();
+            hideMessage();
+        }
+
+        // Helper function to generate Google Calendar link
         function generateCalendarLink(booking) {
-            const { studentName, date, timeSlot } = booking;
-            const title = `Class Replacement: ${studentName}`;
-            const location = "Chumbaka Sibu (Veritas Academy)";
-            const details = `Replacement class scheduled for ${studentName}. If you need to make changes, please contact us.`;
+            const date = booking.date;
+            const timeSlot = booking.timeSlot;
+            const studentName = booking.studentName;
 
-            let startHour, endHour;
-
+            let startTime, endTime;
             if (timeSlot) {
-                const [startTimeStr, endTimeStr] = timeSlot.split(' - ');
-                let startH = parseInt(startTimeStr);
-                if (startTimeStr.includes('pm') && startH !== 12) startH += 12;
-
-                let endH = parseInt(endTimeStr);
-                if (endTimeStr.includes('pm') && endH !== 12) endH += 12;
-
-                startHour = startH;
-                endHour = endH;
+                const [start, end] = timeSlot.split(' - ');
+                startTime = convertTo24Hour(start);
+                endTime = convertTo24Hour(end);
             } else {
-                startHour = 15;
-                endHour = 17;
+                // Default for Monday/Wednesday if no slot is needed
+                startTime = '15:00:00';
+                endTime = '16:00:00';
             }
 
-            const startDate = new Date(`${date}T${String(startHour).padStart(2, '0')}:00:00`);
-            const endDate = new Date(`${date}T${String(endHour).padStart(2, '0')}:00:00`);
+            const startDate = new Date(date + 'T' + startTime);
+            const endDate = new Date(date + 'T' + endTime);
+            const title = encodeURIComponent(`Chumbaka Class Replacement for ${studentName}`);
+            const details = encodeURIComponent(`Student: ${studentName}\nDate: ${booking.date}\nTime: ${timeSlot || '3pm - 4pm'}`);
 
-            const formatToUTC = (d) => d.toISOString().replace(/-|:|\.\d+/g, "");
-            const datesParam = `${formatToUTC(startDate)}/${formatToUTC(endDate)}`;
+            const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate.toISOString().replace(/[-:]/g, '').slice(0, -5)}/${endDate.toISOString().replace(/[-:]/g, '').slice(0, -5)}&details=${details}&sf=true&output=xml`;
 
-            const url = new URL('https://www.google.com/calendar/render');
-            url.searchParams.append('action', 'TEMPLATE');
-            url.searchParams.append('text', title);
-            url.searchParams.append('dates', datesParam);
-            url.searchParams.append('details', details);
-            url.searchParams.append('location', location);
+            return `<br><a href="${googleCalendarUrl}" target="_blank" class="button is-link is-small mt-3">Add to Google Calendar for ${studentName}</a>`;
+        }
 
-            return `<p style="margin-top: 0.5rem;">
-                        <strong>${studentName} on ${date} ${timeSlot ? `(${timeSlot})` : ''}</strong><br>
-                        <a href="${url.href}" target="_blank" rel="noopener noreferrer" class="button is-small is-link mt-1">
-                            <span class="icon is-small"><i class="fab fa-google"></i></span>
-                            <span>Add to Google Calendar</span>
-                        </a>
-                    </p>`;
+        function convertTo24Hour(time) {
+            const [timePart, period] = time.match(/(\d+)(a?m?|p?m?)/i).slice(1);
+            let hours = parseInt(timePart);
+            if (period.toLowerCase().includes('pm') && hours < 12) {
+                hours += 12;
+            }
+            if (period.toLowerCase().includes('am') && hours === 12) {
+                hours = 0;
+            }
+            const paddedHours = hours.toString().padStart(2, '0');
+            return `${paddedHours}:00:00`;
         }
     </script>
 </body>
