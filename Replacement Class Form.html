@@ -130,7 +130,7 @@
             padding: var(--spacing-xs) !important;
             border-radius: 12px !important;
             box-shadow: none !important;
-            margin-bottom: var(--spacing-sm); /* Added margin for separation */
+            margin-bottom: var(--spacing-sm);
         }
 
         .day-restriction-note {
@@ -354,6 +354,12 @@
             .logo-container img { max-width: 300px; }
             .title { font-size: 2.5rem; }
             .subtitle { font-size: 1.25rem; }
+            .field.is-grouped.is-grouped-right {
+                flex-wrap: wrap;
+            }
+            .field.is-grouped.is-grouped-right .control {
+                margin-bottom: 0.5rem;
+            }
         }
         @media (max-width: 480px) {
             .logo-container img { max-width: 220px; }
