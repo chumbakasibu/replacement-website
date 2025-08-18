@@ -407,7 +407,7 @@
                 </button>
             </div>
             <div class="control">
-                <button class="button is-light" type="reset" onclick="handleReset()">
+                <button class="button is-light" type="button" onclick="handleReset()">
                     <span class="icon"><i class="fas fa-undo"></i></span><span>Reset Form</span>
                 </button>
             </div>
@@ -786,6 +786,7 @@
         function handleReset() {
             studentsContainer.innerHTML = "";
             addStudent();
+            hideMessage(); // Ensure any previous messages are also hidden on reset.
         }
 
         function showMessage(text, type) {
