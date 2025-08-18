@@ -130,6 +130,7 @@
             padding: var(--spacing-xs) !important;
             border-radius: 12px !important;
             box-shadow: none !important;
+            margin-bottom: var(--spacing-sm); /* Added margin for separation */
         }
 
         .day-restriction-note {
@@ -160,9 +161,9 @@
             color: var(--white);
             border: none;
             box-shadow: var(--shadow-md);
-            display: flex; /* ADDED */
-            justify-content: center; /* ADDED */
-            align-items: center; /* ADDED */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .button.is-primary:hover, .button.is-primary:focus {
             background: var(--dark-red);
@@ -170,7 +171,7 @@
             transform: translateY(-3px);
             box-shadow: var(--shadow-lg);
         }
-        
+
         /* Custom Loading Animation for Primary Button */
         .button.is-primary.is-loading .submit-text, .button.is-primary.is-loading .icon {
             display: none;
@@ -183,7 +184,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 1.5rem; /* Ensure button height is maintained */
+            height: 1.5rem;
         }
         .loading-dots .dot {
             width: 8px;
@@ -420,22 +421,20 @@
 
         // List of holidays (YYYY-MM-DD format) - Keep this updated
         const HOLIDAYS = [
-          "2024-02-01", "2024-06-07", "2024-09-20", "2024-10-11", "2024-12-27",
-          "2024-03-31", "2024-06-02", "2024-09-01", "2024-09-15", "2024-12-22", "2024-12-29",
-          "2025-01-01", "2025-01-29", "2025-06-04", "2025-09-17", "2025-12-24", "2025-12-31",
+          "2024-02-10", "2024-02-11", // Chinese New Year
+          "2024-03-29", // Good Friday
+          "2024-05-01", // Labour Day
+          "2024-05-22", // Wesak Day
+          "2024-06-03", // Agong's Birthday
+          "2024-06-17", "2024-06-18", // Hari Raya Haji
+          "2024-07-07", "2024-07-08", // Awal Muharram
+          "2024-08-31", // National Day
+          "2024-09-16", // Malaysia Day
+          "2024-09-16", // Maulidur Rasul
+          "2024-10-31", // Deepavali
+          "2024-12-25", // Christmas
+          "2025-01-01"  // New Year 2025
           // Add more holidays for future years as needed
-          "2025-02-10", "2025-02-11", // Example: CNY 2025
-          "2025-04-18", // Example: Good Friday 2025
-          "2025-05-01", // Example: Labour Day 2025
-          "2025-05-12", // Example: Wesak Day 2025
-          "2025-06-02", // Example: Agong's Birthday 2025
-          "2025-06-07", // Example: Gawai Dayak 2025 (Adjust if needed)
-          "2025-08-31", // Example: National Day 2025
-          "2025-09-01", // Example: National Day Holiday 2025
-          "2025-09-16", // Example: Malaysia Day 2025
-          "2025-10-20", // Example: Prophet Muhammad's Birthday 2025 (Approx)
-          "2025-10-31", // Example: Deepavali 2025 (Approx)
-          "2025-12-25"  // Example: Christmas Day 2025
         ];
 
         window.addEventListener("DOMContentLoaded", () => {
@@ -580,12 +579,6 @@
                 </div>
                 <div class="field is-grouped is-grouped-right mt-3">
                     <div class="control">
-                        <button type="button" class="button is-info is-small" onclick="addDateEntry(this)">
-                            <span class="icon is-small"><i class="fas fa-calendar-plus"></i></span>
-                            <span>Add Replacement Date</span>
-                        </button>
-                    </div>
-                    <div class="control">
                         <button type="button" class="button is-danger is-small is-outlined" onclick="removeStudent(this)">
                             <span class="icon is-small"><i class="fas fa-user-minus"></i></span>
                             <span>Remove This Student</span>
@@ -594,11 +587,10 @@
                 </div>
             `;
             studentsContainer.appendChild(studentBlock);
-            addDateEntry(studentBlock.querySelector(".button.is-info"));
+            addDateEntry(studentBlock.querySelector(".date-entries-container"));
         }
 
-        function addDateEntry(button) {
-            const dateEntriesContainer = button.closest(".student-block").querySelector(".date-entries-container");
+        function addDateEntry(container) {
             const today = new Date().toISOString().split("T")[0];
             const dateEntryId = `date-entry-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
 
@@ -631,14 +623,22 @@
                     </div>
                 </div>
                 <p class="availability-info help"></p>
-                <div class="field mt-2">
-                    <button type="button" class="button is-danger is-outlined is-small" onclick="removeDateEntry(this)">
-                        <span class="icon is-small"><i class="fas fa-calendar-times"></i></span>
-                        <span>Remove This Date</span>
-                    </button>
+                <div class="field is-grouped is-grouped-right mt-2">
+                    <div class="control">
+                        <button type="button" class="button is-info is-small" onclick="addDateEntry(this.closest('.date-entries-container'))">
+                            <span class="icon is-small"><i class="fas fa-calendar-plus"></i></span>
+                            <span>Add Another Date</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <button type="button" class="button is-danger is-outlined is-small" onclick="removeDateEntry(this)">
+                            <span class="icon is-small"><i class="fas fa-calendar-times"></i></span>
+                            <span>Remove This Date</span>
+                        </button>
+                    </div>
                 </div>
             `;
-            dateEntriesContainer.appendChild(dateEntry);
+            container.appendChild(dateEntry);
         }
 
         function removeStudent(button) {
