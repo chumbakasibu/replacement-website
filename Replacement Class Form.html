@@ -797,7 +797,7 @@
             message.style.opacity = 1;
             setTimeout(() => {
                 hideMessage();
-            }, 6000); // Hide after 6 seconds
+            }, 20000); // Hide after 6 seconds
         }
 
         function hideMessage() {
@@ -810,7 +810,6 @@
         function handleReset() {
             studentsContainer.innerHTML = '';
             addStudent();
-            hideMessage();
         }
 
         // Helper function to generate Google Calendar link
@@ -855,4 +854,3 @@
     </script>
 </body>
 </html>
-
