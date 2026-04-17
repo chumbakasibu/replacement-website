@@ -388,7 +388,7 @@
 
 <form id="form" class="container glass-box mt-5">
     <div class="day-restriction-note">
-        <strong>Note:</strong> Replacements are only available on <strong>Mondays, Wednesdays, and Saturdays</strong> (excluding holidays). Capacities are limited.
+        <strong>Note:</strong> Replacements are only available on <strong>Mondays, Wednesdays, Thursdays (7:30pm to 8:30pm), and Saturdays</strong> (excluding holidays). Capacities are limited.
     </div>
 
     <div class="field">
@@ -538,8 +538,8 @@
                         break;
                     }
 
-                    if (![1, 3, 6].includes(day)) {
-                        showMessage(`${dateValue} is not a Monday, Wednesday, or Saturday. Please correct for ${studentName}.`, "error");
+                    if (![1, 3, 4, 6].includes(day)) {
+                        showMessage(`${dateValue} is not a Monday, Wednesday, Thursday, or Saturday. Please correct for ${studentName}.`, "error");
                         dateInput.focus();
                         allSubmissionsSuccessful = false;
                         break;
@@ -708,8 +708,8 @@
             input.setCustomValidity("Selected date is a holiday. Please choose another date.");
             input.reportValidity();
             return;
-        } else if (![1, 3, 6].includes(day)) {
-            input.setCustomValidity("Replacement can only be on Monday, Wednesday, or Saturday.");
+        } else if (![1, 3, 4, 6].includes(day)) {
+            input.setCustomValidity("Replacement can only be on Monday, Wednesday, Thursday, or Saturday.");
             input.reportValidity();
             return;
         }
@@ -742,14 +742,14 @@
             return;
         }
 
-        if (![1, 3, 6].includes(day)) {
-            showMessage("Replacement can only be scheduled on Monday, Wednesday, or Saturday.", "error");
+        if (![1, 3, 4, 6].includes(day)) {
+            showMessage("Replacement can only be scheduled on Monday, Wednesday, Thursday, or Saturday.", "error");
             input.value = '';
             input.focus();
             return;
         }
 
-        if (day === 1 || day === 3) {
+        if (day === 1 || day === 3 || day === 4) {
             timeSlotField.style.display = "none";
             timeSlotSelect.required = false;
             fetchSlotAvailability(dateValue, "", dateEntryElement);
@@ -854,15 +854,15 @@
             startTime = convertTo24Hour(start);
             endTime = convertTo24Hour(end);
         } else {
-            // Default for Monday/Wednesday if no slot is needed
-            startTime = '15:00:00';
-            endTime = '16:00:00';
+            // Default for Monday/Wednesday/Thursday if no slot is needed
+            startTime = '19:30:00';
+            endTime = '20:30:00';
         }
 
         const startDate = new Date(date + 'T' + startTime);
         const endDate = new Date(date + 'T' + endTime);
         const title = encodeURIComponent(`Chumbaka Class Replacement for ${studentName}`);
-        const details = encodeURIComponent(`Student: ${studentName}\nDate: ${booking.date}\nTime: ${timeSlot || '3pm - 4pm'}`);
+        const details = encodeURIComponent(`Student: ${studentName}\nDate: ${booking.date}\nTime: ${timeSlot || '7:30pm - 8:30pm'}`);
 
         const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate.toISOString().replace(/[-:]/g, '').slice(0, -5)}/${endDate.toISOString().replace(/[-:]/g, '').slice(0, -5)}&details=${details}&sf=true&output=xml`;
 
@@ -884,4 +884,3 @@
 </script>
 </body>
 </html>
-
