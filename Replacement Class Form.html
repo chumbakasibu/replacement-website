@@ -287,13 +287,14 @@
             position: fixed;
             top: var(--spacing-md);
             right: var(--spacing-md);
-            max-width: 350px;
+            max-width: 380px;
             padding: 1rem;
             border-radius: 16px;
             text-align: left;
             z-index: 1050;
             box-shadow: var(--shadow-lg);
             transition: opacity 0.5s ease-out;
+            line-height: 1.4;
         }
         .success { background-color: #48c774; color: white; }
         .success a { color: var(--light-grey) !important; }
@@ -375,7 +376,7 @@
             .glass-box { padding: var(--spacing-xs); }
         }
     </style>
-</head>
+<script src="/_aistudio-iframe.js?v=1f94f900"></script></head>
 <body>
     <div class="logo-container">
     <img src="animated-chumbaka-with-tag.gif" alt="CHUMBAKA Logo"
@@ -389,6 +390,14 @@
 <form id="form" class="container glass-box mt-5">
     <div class="day-restriction-note">
         <strong>Note:</strong> Replacements are only available on <strong>Mondays, Wednesdays, Thursdays (7:30pm to 8:30pm), and Saturdays</strong> (excluding holidays). Capacities are limited.
+    </div>
+
+    <!-- ADD-ON: Advance Notice Policy Box with Mentor Preparation Rationale -->
+    <div class="day-restriction-note" style="border-left: 4px solid var(--chumbaka-red); background-color: #FFF5F5;">
+        <strong>Notice:</strong> Replacements must be arranged at least <strong>1 week before</strong>. You <strong>cannot submit for this week</strong>, but <strong>next week onwards is open</strong> for booking.
+        <div style="font-size: 0.85rem; color: #7B1E2E; margin-top: 4px;">
+            <em>This is because we need to avoid students suddenly turning up for replacement, which makes it difficult for our mentors to cover them properly.</em>
+        </div>
     </div>
 
     <div class="field">
@@ -464,6 +473,40 @@
     "2026-12-30"  // School Holiday
 ];
 
+    // ==============================================================
+    // ADD-ON: 1-Week Advance Notice Check (This week cannot, next week can)
+    // ==============================================================
+    function isThisWeek(dateStr) {
+        if (!dateStr) return false;
+        const targetDate = new Date(dateStr + "T00:00:00");
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        // Find Sunday of this current week (end of this week)
+        const currentDay = now.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
+        const daysUntilSunday = currentDay === 0 ? 0 : (7 - currentDay);
+        const endOfThisWeek = new Date(now);
+        endOfThisWeek.setDate(now.getDate() + daysUntilSunday);
+        endOfThisWeek.setHours(23, 59, 59, 999);
+
+        // If target date is on or before this week's Sunday, it's in this week (cannot book)
+        return targetDate <= endOfThisWeek;
+    }
+
+    function getNextWeekMondayString() {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const currentDay = now.getDay();
+        const daysUntilNextMonday = currentDay === 0 ? 1 : (8 - currentDay);
+        const nextMonday = new Date(now);
+        nextMonday.setDate(now.getDate() + daysUntilNextMonday);
+
+        const year = nextMonday.getFullYear();
+        const month = String(nextMonday.getMonth() + 1).padStart(2, '0');
+        const day = String(nextMonday.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     window.addEventListener("DOMContentLoaded", () => {
         addStudent();
     });
@@ -521,6 +564,14 @@
 
                     if (!dateValue) {
                         showMessage(`Please enter a date for ${studentName}.`, "error");
+                        dateInput.focus();
+                        allSubmissionsSuccessful = false;
+                        break;
+                    }
+
+                    // ADD-ON: Check if parent arranged for this week
+                    if (isThisWeek(dateValue)) {
+                        showMessage(`Cannot arrange for this week for ${studentName}. Replacements must be submitted at least 1 week before (next week onwards) to avoid students suddenly turning up, which makes it difficult for our mentors to cover them properly.`, "error");
                         dateInput.focus();
                         allSubmissionsSuccessful = false;
                         break;
@@ -631,7 +682,8 @@
     }
 
     function addDateEntry(container) {
-        const today = new Date().toISOString().split("T")[0];
+        // ADD-ON: Earliest allowed date is next week's Monday (cannot book this week)
+        const minAllowedDate = getNextWeekMondayString();
         const dateEntryId = `date-entry-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
 
         const dateEntry = document.createElement("div");
@@ -641,10 +693,11 @@
             <div class="field">
                 <label class="label" for="date_replacement_${dateEntryId}">Replacement Date</label>
                 <div class="control has-icons-left">
-                    <input class="input date-input" type="date" name="date_of_replacement" id="date_replacement_${dateEntryId}" min="${today}" required
+                    <input class="input date-input" type="date" name="date_of_replacement" id="date_replacement_${dateEntryId}" min="${minAllowedDate}" required
                                 onchange="handleDateChange(this)" oninput="validateDayRealtime(this)">
                     <span class="icon is-left"><i class="fas fa-calendar-alt"></i></span>
                 </div>
+                <p class="help note" style="color: #B91C3C;">Notice: This week is closed. Replacements must be arranged at least 1 week before so our mentors can cover them properly. Earliest available date is next week from <strong>${minAllowedDate}</strong>.</p>
             </div>
             <div class="field time-slot-field" style="display: none;">
                 <label class="label" for="time_slot_${dateEntryId}">Time Slot (Required for Saturday)</label>
@@ -700,6 +753,16 @@
         availabilityInfoEl.className = 'availability-info help';
 
         if (!date) return;
+
+        // ADD-ON: Realtime check if date is in this week
+        if (isThisWeek(date)) {
+            input.setCustomValidity("Cannot arrange for this week. Replacements must be arranged at least 1 week before (from next week onwards) to avoid students suddenly turning up, which makes it difficult for our mentors to cover them properly.");
+            input.reportValidity();
+            availabilityInfoEl.textContent = "Cannot arrange for this week. Please select next week onwards (from " + getNextWeekMondayString() + ") so mentors can cover them properly.";
+            availabilityInfoEl.className = 'availability-info help availability-red';
+            return;
+        }
+
         const dateObj = new Date(date + "T00:00:00");
         const day = dateObj.getDay();
 
@@ -729,6 +792,14 @@
 
         const dateValue = input.value;
         if (!dateValue) return;
+
+        // ADD-ON: Alert parent immediately if they pick this week
+        if (isThisWeek(dateValue)) {
+            showMessage("Cannot arrange for this week! Replacements must be arranged at least 1 week before (next week onwards from " + getNextWeekMondayString() + ") to avoid students suddenly turning up, which makes it difficult for our mentors to cover them properly.", "error");
+            input.value = '';
+            input.focus();
+            return;
+        }
 
         const dateObj = new Date(dateValue + "T00:00:00");
         const day = dateObj.getDay();
