@@ -376,7 +376,7 @@
             .glass-box { padding: var(--spacing-xs); }
         }
     </style>
-<script src="/_aistudio-iframe.js?v=1f94f900"></script></head>
+<script src="/_aistudio-iframe.js?v=29045eb3"></script></head>
 <body>
     <div class="logo-container">
     <img src="animated-chumbaka-with-tag.gif" alt="CHUMBAKA Logo"
@@ -398,6 +398,15 @@
         <div style="font-size: 0.85rem; color: #7B1E2E; margin-top: 4px;">
             <em>This is because we need to avoid students suddenly turning up for replacement, which makes it difficult for our mentors to cover them properly.</em>
         </div>
+    </div>
+
+    <!-- ADD-ON: December Schedule Update (Dec 11, 12, 19) -->
+    <div class="day-restriction-note" style="border-left: 4px solid #3273dc; background-color: #EFF6FF;">
+        <strong>December Schedule Update:</strong>
+        <ul style="margin-top: 4px; margin-left: 1.25rem; list-style-type: disc;">
+            <li><strong>Dec 12 (Sat) – Election Day:</strong> No class. Class is moved to <strong>Dec 11 (Fri)</strong> (open for replacement booking).</li>
+            <li><strong>Dec 19 (Sat) – Open Day:</strong> No class.</li>
+        </ul>
     </div>
 
     <div class="field">
@@ -452,7 +461,7 @@
     // IMPORTANT: Replace with your actual Google Apps Script URL
     const scriptUrl = "https://script.google.com/macros/s/AKfycbx9XNQ8NSMGPcfXusnWdMD1Qko4cYCrg9_ZVSUME1AdqIPqHvzo2zZKJn_UDW8AN_s/exec";
 
-    // List of holidays (YYYY-MM-DD format) - Keep this updated
+    // List of holidays / no-class dates (YYYY-MM-DD format) - Keep this updated
     const HOLIDAYS = [
     "2026-01-03", // Chumbaka Break
     "2026-02-16", // Chinese New Year (Mon)
@@ -465,13 +474,24 @@
     "2026-08-31", // School Holiday
     "2026-09-02", // School Holiday
     "2026-10-10", // Sarawak Governor's BDay
-    "2026-12-12", // Project Showcase
+    "2026-12-12", // Election Day (No Class - moved to Dec 11)
+    "2026-12-19", // Open Day (No Class)
     "2026-12-21", // School Holiday
     "2026-12-23", // School Holiday
     "2026-12-26", // School Holiday
     "2026-12-28", // School Holiday
     "2026-12-30"  // School Holiday
 ];
+
+    // Special replacement dates open outside normal Mon/Wed/Thu/Sat schedule
+    const SPECIAL_OPEN_DATES = {
+        "2026-12-11": "Moved from Dec 12 (Election Day)"
+    };
+
+    const NO_CLASS_REASONS = {
+        "2026-12-12": "Dec 12 (Sat) is Election Day (no class). Class has been moved to Dec 11 (Friday) — please book Dec 11 instead.",
+        "2026-12-19": "Dec 19 (Sat) is Open Day (no class). Please choose another date."
+    };
 
     // ==============================================================
     // ADD-ON: 1-Week Advance Notice Check (This week cannot, next week can)
@@ -579,24 +599,25 @@
 
                     const dateObj = new Date(dateValue + "T00:00:00");
                     const day = dateObj.getDay();
-                    const formattedDate = dateObj.toISOString().split('T')[0];
+                    const isSpecialOpen = Boolean(SPECIAL_OPEN_DATES[dateValue]);
 
-                    if (HOLIDAYS.includes(formattedDate)) {
-                        showMessage(`${dateValue} is a holiday. Please choose another date for ${studentName}.`, "error");
+                    if (HOLIDAYS.includes(dateValue)) {
+                        const reasonMsg = NO_CLASS_REASONS[dateValue] || `${dateValue} is a holiday. Please choose another date for ${studentName}.`;
+                        showMessage(reasonMsg, "error");
                         dateInput.focus();
                         allSubmissionsSuccessful = false;
                         break;
                     }
 
-                    if (![1, 3, 4, 6].includes(day)) {
+                    if (![1, 3, 4, 6].includes(day) && !isSpecialOpen) {
                         showMessage(`${dateValue} is not a Monday, Wednesday, Thursday, or Saturday. Please correct for ${studentName}.`, "error");
                         dateInput.focus();
                         allSubmissionsSuccessful = false;
                         break;
                     }
 
-                    if (day === 6 && !timeSlot) {
-                        showMessage(`Please select a time slot for Saturday ${dateValue} for ${studentName}.`, "error");
+                    if ((day === 6 || isSpecialOpen) && !timeSlot) {
+                        showMessage(`Please select a time slot for ${dateValue} for ${studentName}.`, "error");
                         slotSelect.focus();
                         allSubmissionsSuccessful = false;
                         break;
@@ -765,13 +786,17 @@
 
         const dateObj = new Date(date + "T00:00:00");
         const day = dateObj.getDay();
+        const isSpecialOpen = Boolean(SPECIAL_OPEN_DATES[date]);
 
         if (HOLIDAYS.includes(date)) {
-            input.setCustomValidity("Selected date is a holiday. Please choose another date.");
+            const reasonMsg = NO_CLASS_REASONS[date] || "Selected date is a holiday. Please choose another date.";
+            input.setCustomValidity(reasonMsg);
             input.reportValidity();
+            availabilityInfoEl.textContent = reasonMsg;
+            availabilityInfoEl.className = 'availability-info help availability-red';
             return;
-        } else if (![1, 3, 4, 6].includes(day)) {
-            input.setCustomValidity("Replacement can only be on Monday, Wednesday, Thursday, or Saturday.");
+        } else if (![1, 3, 4, 6].includes(day) && !isSpecialOpen) {
+            input.setCustomValidity("Replacement can only be on Monday, Wednesday, Thursday, or Saturday (plus Dec 11 Friday).");
             input.reportValidity();
             return;
         }
@@ -803,30 +828,39 @@
 
         const dateObj = new Date(dateValue + "T00:00:00");
         const day = dateObj.getDay();
-        const formattedDate = dateObj.toISOString().split('T')[0];
+        const isSpecialOpen = Boolean(SPECIAL_OPEN_DATES[dateValue]);
 
-        if (HOLIDAYS.includes(formattedDate)) {
-            showMessage("Selected date is a holiday. Please choose another date.", "error");
+        if (HOLIDAYS.includes(dateValue)) {
+            const reasonMsg = NO_CLASS_REASONS[dateValue] || "Selected date is a holiday. Please choose another date.";
+            showMessage(reasonMsg, "error");
             input.value = '';
             input.focus();
             return;
         }
 
-        if (![1, 3, 4, 6].includes(day)) {
-            showMessage("Replacement can only be scheduled on Monday, Wednesday, Thursday, or Saturday.", "error");
+        if (![1, 3, 4, 6].includes(day) && !isSpecialOpen) {
+            showMessage("Replacement can only be scheduled on Monday, Wednesday, Thursday, or Saturday (plus Dec 11 Friday).", "error");
             input.value = '';
             input.focus();
             return;
         }
 
-        if (day === 1 || day === 3 || day === 4) {
+        if ((day === 1 || day === 3 || day === 4) && !isSpecialOpen) {
             timeSlotField.style.display = "none";
             timeSlotSelect.required = false;
             fetchSlotAvailability(dateValue, "", dateEntryElement);
-        } else if (day === 6) {
+        } else if (day === 6 || isSpecialOpen) {
             timeSlotField.style.display = "block";
             timeSlotSelect.required = true;
-            availabilityInfoEl.textContent = "Please select a time slot for Saturday.";
+            const slotLabel = timeSlotField.querySelector("label");
+            if (slotLabel) {
+                slotLabel.textContent = isSpecialOpen
+                    ? "Time Slot (Required for Dec 11 Friday – Moved from Dec 12)"
+                    : "Time Slot (Required for Saturday)";
+            }
+            availabilityInfoEl.textContent = isSpecialOpen
+                ? "Dec 11 (Friday) is open for Dec 12 replacement. Please select a time slot."
+                : "Please select a time slot for Saturday.";
             availabilityInfoEl.className = 'availability-info help availability-checking';
         }
     }
